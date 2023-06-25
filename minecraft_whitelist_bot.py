@@ -27,7 +27,7 @@ def duplicate(json_data, name):
 
 
 def attempt_write_to_whitelist(message, name):
-    whitelist_path = 'data/whitelist.json'
+    whitelist_path = 'data/server/whitelist.json'
     # open file(filename)
     with open(whitelist_path) as file:
         data = json.load(file)
@@ -39,13 +39,12 @@ def attempt_write_to_whitelist(message, name):
         data.append(new_data)
         with open(whitelist_path, 'w') as file:
             json.dump(data, file)
-        message.channel.send(
+        await message.channel.send(
             "Registered user in whitelist...Server will now restart")
         subprocess.run(["./data/restart_server.sh"])
 
     else:
-        message.channel.send(
-            name, ' = Duplicate name detected, will not restart')
+        await message.channel.send('Duplicate name detected, will not restart')
 
 
 ########################
