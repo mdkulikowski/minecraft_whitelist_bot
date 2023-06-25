@@ -19,34 +19,14 @@ intents.messages = True
 
 
 # check if duplicates
-def duplicate(json_data, name):
+async def duplicate(json_data, name):
     for entrie in json_data:
         if entrie['name'] == name:
             return True
     return False
 
 
-def attempt_write_to_whitelist(message, name):
-    whitelist_path = 'data/server/whitelist.json'
-    # open file(filename)
-    with open(whitelist_path) as file:
-        data = json.load(file)
-
-# print error or write to json
-    if (not duplicate(data, name)):
-        new_data = {}
-        new_data['name'] = name
-        data.append(new_data)
-        with open(whitelist_path, 'w') as file:
-            json.dump(data, file)
-        await message.channel.send(
-            "Registered user in whitelist...Server will now restart")
-        subprocess.run(["./data/restart_server.sh"])
-
-    else:
-        await message.channel.send('Duplicate name detected, will not restart')
-
-
+    
 ########################
 
 
@@ -62,10 +42,27 @@ async def on_ready():
 async def on_message(message):
     if isinstance(message.channel, discord.Thread):
         thread_id = env_vars['THREAD_ID']  # Minecraft Whitelist Thread
-        print(message.channel.id)
         if message.channel.id == int(thread_id):
-            print("its a match")
-            attempt_write_to_whitelist(message, message.content)
+            if message.author != client.user:
+
+                whitelist_path = 'data/server/whitelist.json'
+                # open file(filename)
+                with open(whitelist_path) as file:
+                    data = json.load(file)
+
+                # print error or write to json
+                if (not (await duplicate(data, name))):
+                    new_data = {}
+                    new_data['name'] = name
+                    data.append(new_data)
+                    with open(whitelist_path, 'w') as file:
+                    json.dump(data, file)
+                    await message.channel.send(
+                        "Registered user in whitelist...Server will now restart")
+                    subprocess.run(["./data/restart_server.sh"])
+
+                else:
+                    await message.channel.send('Duplicate name detected, will not restart')
 
 
 try:
