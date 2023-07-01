@@ -12,10 +12,46 @@ TOKEN = env_vars['TOKEN_ID']
 intents = discord.Intents.default()
 intents.messages = True
 intents.message_content = True
+
+ #whitelist_path = '/home/mdkulikowski/game_server_data/minecraft_data/server/whitelist.json'
+working_dir = '/home/mdkulikowski/game_server_data/minecraft_data/'
+script_dir = working_dir + 'restart_server.sh'
+whitelist_path = working_dir + 'server/whitelist.json'
 ########################
 
 ##### functions##########
-########################
+async def seach_whitelist(name,data,uuid):
+    for entrie in data:
+        if entrie['name'] == name:
+            if (uuid != None):
+                entrie['uuid'] = uuid
+            return True
+    return False
+
+
+async def register_name(message,name,data):
+    # check if duplicates
+    # print error or write to json
+    if (seach_whitelist(name,data,None)):
+        new_data = {}
+        new_data['name'] = name
+        data.append(new_data)
+        with open(whitelist_path, 'w') as file:
+            json.dump(data, file)
+        await message.channel.send("Registered user in whitelist...Server will now restart")
+        subprocess.call(['bash', script_dir], cwd=working_dir)
+    else:
+        await message.channel.send('Duplicate name detected, will not restart')
+
+
+async def register_uuid(message,uuid,data):
+    #regex the last login attempt
+    #get name and uuid if found
+    #determine if name is registered
+    #write uuid if name found
+    #restart server
+    return True
+###################
 
 
 client = discord.Client(intents=intents)
@@ -32,37 +68,19 @@ async def on_message(message):
         thread_id = env_vars['THREAD_ID']  # Minecraft Whitelist Thread
         if message.channel.id == int(thread_id):
             if message.author != client.user:
-                name = message.content
-
-                #whitelist_path = '/home/mdkulikowski/game_server_data/minecraft_data/server/whitelist.json'
-                working_dir = '/home/mdkulikowski/game_server_data/minecraft_data/'
-                script_dir = working_dir + 'restart_server.sh'
-                whitelist_path = working_dir + 'server/whitelist.json'
-                # open file(filename)
-                with open(whitelist_path) as file:
-                    data = json.load(file)
-
-                # check if duplicates
-                duplicate = False
-
-                for entrie in data:
-                    if entrie['name'] == name:
-                        duplicate = True
-
-                # print error or write to json
-                if (not duplicate):
-                    new_data = {}
-                    new_data['name'] = name
-                    data.append(new_data)
-                    with open(whitelist_path, 'w') as file:
-                        json.dump(data, file)
-                    await message.channel.send(
-                        "Registered user in whitelist...Server will now restart")
-                                        
-                    subprocess.call(['bash', script_dir], cwd=working_dir)
-
+                if message.content.startswith("#"):
+                    pass
                 else:
-                    await message.channel.send('Duplicate name detected, will not restart')
+                    user_input = message.content
+                    # open file(filename)
+                    with open(whitelist_path) as file:
+                        data = json.load(file)
+                    
+                    if message.content == 'uuid':
+                        register_uuid(message,user_input,data)
+                    else:
+                        register_name(message,user_input,data)
+
 
 
 try:
