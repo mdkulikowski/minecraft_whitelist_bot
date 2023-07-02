@@ -40,7 +40,7 @@ async def write_to_whitelist(data):
 async def register_name(message, name, data):
     # check if duplicates
     # print error or write to json
-    if (await seach_whitelist(name, data, None)):
+    if (not (await seach_whitelist(name, data, None))):
         new_data = {}
         new_data['name'] = name
         data.append(new_data)
