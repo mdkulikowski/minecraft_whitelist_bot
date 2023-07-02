@@ -14,14 +14,16 @@ intents = discord.Intents.default()
 intents.messages = True
 intents.message_content = True
 
- #whitelist_path = '/home/mdkulikowski/game_server_data/minecraft_data/server/whitelist.json'
+# whitelist_path = '/home/mdkulikowski/game_server_data/minecraft_data/server/whitelist.json'
 working_dir = '/home/mdkulikowski/game_server_data/minecraft_data/'
 script_dir = working_dir + 'restart_server.sh'
 whitelist_path = working_dir + 'server/whitelist.json'
 ########################
 
 ##### functions##########
-async def seach_whitelist(name,data,uuid):
+
+
+async def seach_whitelist(name, data, uuid):
     for entrie in data:
         if entrie['name'] == name:
             if (uuid != None):
@@ -29,14 +31,16 @@ async def seach_whitelist(name,data,uuid):
             return True
     return False
 
+
 async def write_to_whitelist(data):
     with open(whitelist_path, 'w') as file:
         json.dump(data, file)
 
-async def register_name(message,name,data):
+
+async def register_name(message, name, data):
     # check if duplicates
     # print error or write to json
-    if (seach_whitelist(name,data,None)):
+    if (await seach_whitelist(name, data, None)):
         new_data = {}
         new_data['name'] = name
         data.append(new_data)
@@ -53,30 +57,32 @@ async def search_rejection_logs(logs):
         pattern = r'UUID of player \S* is \S*'
         player_info_regex = re.search(pattern, logs)
         player_info = player_info_regex.group(0).split(' ')
-        return(player_info[3], player_info[5])
+        return (player_info[3], player_info[5])
     else:
         return None
 
 
-async def register_uuid(message,data):
-    #get the last login attempt
-    docker_logs = subprocess.run(['docker', 'logs', '--tail', '7', 'minecraft-server'], capture_output=True, text=True) 
+async def register_uuid(message, data):
+    # get the last login attempt
+    docker_logs = subprocess.run(
+        ['docker', 'logs', '--tail', '7', 'minecraft-server'], capture_output=True, text=True)
     error_log = docker_logs.stdout
-    #search for attempt to join the server
-    player_data = search_rejection_logs(error_log)
-    #get name and uuid if found
+    # search for attempt to join the server
+    player_data = await search_rejection_logs(error_log)
+    # get name and uuid if found
     if (player_data):
-        #determine if name is registered
-        if(seach_whitelist(player_data[0], data, player_data[1])):
-            #write uuid if name found
+        # determine if name is registered
+        if (await seach_whitelist(player_data[0], data, player_data[1])):
+            # write uuid if name found
             await message.channel.send('Found record in whitelist...registering UUID')
             await write_to_whitelist(data)
-            #restart server
+            print(data)
+            # restart server
             await message.channel.send('server restarting')
             subprocess.call(['bash', script_dir], cwd=working_dir)
         else:
             await message.channel.send('No record of player in whitelist. No UUID registered')
-    else: 
+    else:
         await message.channel.send('Your login attempt was unable to be found on the server')
     return True
 ###################
@@ -103,12 +109,11 @@ async def on_message(message):
                     # open file(filename)
                     with open(whitelist_path) as file:
                         data = json.load(file)
-                    
-                    if message.content == 'uuid':
-                        await register_uuid(message,data)
-                    else:
-                        await register_name(message,user_input,data)
 
+                    if message.content == 'uuid':
+                        await register_uuid(message, data)
+                    else:
+                        await register_name(message, user_input, data)
 
 
 try:
