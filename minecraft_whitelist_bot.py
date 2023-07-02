@@ -40,7 +40,7 @@ async def register_name(message,name,data):
         new_data = {}
         new_data['name'] = name
         data.append(new_data)
-        write_to_whitelist(data)
+        await write_to_whitelist(data)
         await message.channel.send("Registered user in whitelist...Server will now restart")
         subprocess.call(['bash', script_dir], cwd=working_dir)
     else:
@@ -70,7 +70,7 @@ async def register_uuid(message,data):
         if(seach_whitelist(player_data[0], data, player_data[1])):
             #write uuid if name found
             await message.channel.send('Found record in whitelist...registering UUID')
-            write_to_whitelist(data)
+            await write_to_whitelist(data)
             #restart server
             await message.channel.send('server restarting')
             subprocess.call(['bash', script_dir], cwd=working_dir)
@@ -105,9 +105,9 @@ async def on_message(message):
                         data = json.load(file)
                     
                     if message.content == 'uuid':
-                        register_uuid(message,data)
+                        await register_uuid(message,data)
                     else:
-                        register_name(message,user_input,data)
+                        await register_name(message,user_input,data)
 
 
 
